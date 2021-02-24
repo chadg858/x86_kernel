@@ -2721,9 +2721,6 @@ int cpufreq_boost_enabled(void)
 }
 EXPORT_SYMBOL_GPL(cpufreq_boost_enabled);
 
-DEFINE_STATIC_KEY_FALSE(cpufreq_amd_max_boost);
-EXPORT_SYMBOL_GPL(cpufreq_amd_max_boost);
-
 /*********************************************************************
  *               REGISTER / UNREGISTER CPUFREQ DRIVER                *
  *********************************************************************/

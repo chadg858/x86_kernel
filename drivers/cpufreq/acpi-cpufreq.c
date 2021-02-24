@@ -27,10 +27,6 @@
 
 #include <acpi/processor.h>
 
-#ifdef CONFIG_ACPI_CPPC_LIB
-#include <acpi/cppc_acpi.h>
-#endif
-
 #include <asm/msr.h>
 #include <asm/processor.h>
 #include <asm/cpufeature.h>
@@ -632,57 +628,11 @@ static int acpi_cpufreq_blacklist(struct cpuinfo_x86 *c)
 }
 #endif
 
-#ifdef CONFIG_ACPI_CPPC_LIB
-static bool amd_max_boost(unsigned int max_freq,
-			  unsigned int *max_boost)
-{
-	struct cppc_perf_caps perf_caps;
-	u64 highest_perf, nominal_perf, perf_ratio;
-	int ret;
-
-	ret = cppc_get_perf_caps(0, &perf_caps);
-	if (ret) {
-		pr_debug("Could not retrieve perf counters (%d)\n", ret);
-		return false;
-	}
-
-	highest_perf = perf_caps.highest_perf;
-	nominal_perf = perf_caps.nominal_perf;
-
-	if (!highest_perf || !nominal_perf) {
-		pr_debug("Could not retrieve highest or nominal performance\n");
-		return false;
-	}
-
-	perf_ratio = div_u64(highest_perf * SCHED_CAPACITY_SCALE, nominal_perf);
-	if (perf_ratio <= SCHED_CAPACITY_SCALE) {
-		pr_debug("Either perf_ratio is 0, or nominal >= highest performance\n");
-		return false;
-	}
-
-	*max_boost = max_freq * perf_ratio >> SCHED_CAPACITY_SHIFT;
-	if (!*max_boost) {
-		pr_debug("max_boost seems to be zero\n");
-		return false;
-	}
-
-	return true;
-}
-#else
-static bool amd_max_boost(unsigned int max_freq,
-			  unsigned int *max_boost)
-{
-	return false;
-}
-#endif
-
 static int acpi_cpufreq_cpu_init(struct cpufreq_policy *policy)
 {
 	unsigned int i;
 	unsigned int valid_states = 0;
 	unsigned int cpu = policy->cpu;
-	unsigned int freq, max_freq = 0;
-	unsigned int max_boost;
 	struct acpi_cpufreq_data *data;
 	unsigned int result = 0;
 	struct cpuinfo_x86 *c = &cpu_data(policy->cpu);
@@ -829,24 +779,14 @@ static int acpi_cpufreq_cpu_init(struct cpufreq_policy *policy)
 		    freq_table[valid_states-1].frequency / 1000)
 			continue;
 
-		freq = perf->states[i].core_frequency * 1000;
 		freq_table[valid_states].driver_data = i;
-		freq_table[valid_states].frequency = freq;
-
-		if (freq > max_freq)
-			max_freq = freq;
-
+		freq_table[valid_states].frequency =
+		    perf->states[i].core_frequency * 1000;
 		valid_states++;
 	}
 	freq_table[valid_states].frequency = CPUFREQ_TABLE_END;
 	policy->freq_table = freq_table;
 	perf->state = 0;
-
-	if (boot_cpu_data.x86_vendor == X86_VENDOR_AMD &&
-	    amd_max_boost(max_freq, &max_boost)) {
-		policy->cpuinfo.max_boost = max_boost;
-		static_branch_enable(&cpufreq_amd_max_boost);
-	}
 
 	switch (perf->control_register.space_id) {
 	case ACPI_ADR_SPACE_SYSTEM_IO:

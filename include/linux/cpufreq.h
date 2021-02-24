@@ -40,14 +40,9 @@ enum cpufreq_table_sorting {
 	CPUFREQ_TABLE_SORTED_DESCENDING
 };
 
-DECLARE_STATIC_KEY_FALSE(cpufreq_amd_max_boost);
-
-#define cpufreq_driver_has_max_boost() static_branch_unlikely(&cpufreq_amd_max_boost)
-
 struct cpufreq_cpuinfo {
 	unsigned int		max_freq;
 	unsigned int		min_freq;
-	unsigned int		max_boost;
 
 	/* in 10^(-9) s = nanoseconds */
 	unsigned int		transition_latency;
