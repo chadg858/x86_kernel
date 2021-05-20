@@ -171,7 +171,7 @@ static int add(struct allowedips_node __rcu **trie, u8 bits, const u8 *key,
 		return -EINVAL;
 
 	if (!rcu_access_pointer(*trie)) {
-		node = kmem_cache_alloc(node_cache, GFP_KERNEL | __GFP_ZERO);
+		node = kmem_cache_zalloc(node_cache, GFP_KERNEL);
 		if (unlikely(!node))
 			return -ENOMEM;
 		RCU_INIT_POINTER(node->peer, peer);
@@ -187,7 +187,7 @@ static int add(struct allowedips_node __rcu **trie, u8 bits, const u8 *key,
 		return 0;
 	}
 
-	newnode = kmem_cache_alloc(node_cache, GFP_KERNEL | __GFP_ZERO);
+	newnode = kmem_cache_zalloc(node_cache, GFP_KERNEL);
 	if (unlikely(!newnode))
 		return -ENOMEM;
 	RCU_INIT_POINTER(newnode->peer, peer);
@@ -220,7 +220,7 @@ static int add(struct allowedips_node __rcu **trie, u8 bits, const u8 *key,
 		return 0;
 	}
 
-	node = kmem_cache_alloc(node_cache, GFP_KERNEL | __GFP_ZERO);
+	node = kmem_cache_zalloc(node_cache, GFP_KERNEL);
 	if (unlikely(!node)) {
 		list_del(&newnode->peer_list);
 		kmem_cache_free(node_cache, newnode);
@@ -365,6 +365,7 @@ int __init wg_allowedips_slab_init(void)
 
 void wg_allowedips_slab_uninit(void)
 {
+	rcu_barrier();
 	kmem_cache_destroy(node_cache);
 }
 
