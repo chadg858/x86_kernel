@@ -189,7 +189,7 @@ static void lrng_cc20_drng_dealloc(void *drng)
 
 #ifdef CONFIG_CRYPTO_LIB_SHA256
 
-#include <crypto/sha2.h>
+#include <crypto/sha.h>
 
 static u32 lrng_cc20_hash_digestsize(void *hash)
 {
@@ -231,7 +231,7 @@ static void lrng_cc20_hash_desc_zero(struct shash_desc *shash)
 
 #else /* CONFIG_CRYPTO_LIB_SHA256 */
 
-#include <crypto/sha1.h>
+#include <crypto/sha.h>
 #include <crypto/sha1_base.h>
 
 /*
