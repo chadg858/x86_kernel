@@ -478,6 +478,16 @@ source "drivers/acpi/numa/Kconfig"
 source "drivers/acpi/apei/Kconfig"
 source "drivers/acpi/dptf/Kconfig"
 
+config ACPI_CALL
+	tristate "Arbitrary ACPI call support"
+	default n
+	help
+	  This integrates a simple kernel module that allows one to call
+	  ACPI methods by writing the method name followed by its arguments
+	  to /proc/acpi/call.
+
+	  If unsure, select n.
+
 config ACPI_WATCHDOG
 	bool
 
