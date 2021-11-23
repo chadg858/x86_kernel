@@ -69,8 +69,8 @@ static long ntfs_compat_ioctl(struct file *filp, u32 cmd, unsigned long arg)
 /*
  * ntfs_getattr - inode_operations::getattr
  */
-int ntfs_getattr(struct user_namespace *mnt_userns, const struct path *path,
-		 struct kstat *stat, u32 request_mask, u32 flags)
+int ntfs_getattr(const struct path *path, struct kstat *stat,
+		 u32 request_mask, u32 flags)
 {
 	struct inode *inode = d_inode(path->dentry);
 	struct ntfs_inode *ni = ntfs_i(inode);
@@ -83,7 +83,7 @@ int ntfs_getattr(struct user_namespace *mnt_userns, const struct path *path,
 
 	stat->attributes_mask |= STATX_ATTR_COMPRESSED | STATX_ATTR_ENCRYPTED;
 
-	generic_fillattr(mnt_userns, inode, stat);
+	generic_fillattr(inode, stat);
 
 	stat->result_mask |= STATX_BTIME;
 	stat->btime = ni->i_crtime;
@@ -728,8 +728,7 @@ out:
 /*
  * ntfs3_setattr - inode_operations::setattr
  */
-int ntfs3_setattr(struct user_namespace *mnt_userns, struct dentry *dentry,
-		  struct iattr *attr)
+int ntfs3_setattr(struct dentry *dentry, struct iattr *attr)
 {
 	struct super_block *sb = dentry->d_sb;
 	struct ntfs_sb_info *sbi = sb->s_fs_info;
@@ -747,7 +746,7 @@ int ntfs3_setattr(struct user_namespace *mnt_userns, struct dentry *dentry,
 		ia_valid = attr->ia_valid;
 	}
 
-	err = setattr_prepare(mnt_userns, dentry, attr);
+	err = setattr_prepare(dentry, attr);
 	if (err)
 		goto out;
 
@@ -772,10 +771,10 @@ int ntfs3_setattr(struct user_namespace *mnt_userns, struct dentry *dentry,
 		ni->ni_flags |= NI_FLAG_UPDATE_PARENT;
 	}
 
-	setattr_copy(mnt_userns, inode, attr);
+	setattr_copy(inode, attr);
 
 	if (mode != inode->i_mode) {
-		err = ntfs_acl_chmod(mnt_userns, inode);
+		err = ntfs_acl_chmod(inode);
 		if (err)
 			goto out;
 
@@ -1028,10 +1027,10 @@ static ssize_t ntfs_compress_write(struct kiocb *iocb, struct iov_iter *from)
 			size_t cp, tail = PAGE_SIZE - off;
 
 			page = pages[ip];
-			cp = copy_page_from_iter_atomic(page, off,
-							min(tail, bytes), from);
+			cp = iov_iter_copy_from_user_atomic(page, from, off,
+							    min(tail, bytes));
 			flush_dcache_page(page);
-
+			iov_iter_advance(from, cp);
 			copied += cp;
 			bytes -= cp;
 			if (!bytes || !cp)
